@@ -61,7 +61,7 @@ services:
       service: db
     environment:
       POSTGRES_DB: *dbname
-      POSTGRES_PASSWORD: odoopassword
+      POSTGRES_PASSWORD: odoo
 
 networks:
   default:
