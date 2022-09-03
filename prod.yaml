@@ -47,12 +47,16 @@ services:
 
 networks:
   default:
-    driver_opts:
-      encrypted: 0
-
+    internal: ${DOODBA_NETWORK_INTERNAL-true}
   public:
-    external: true
 
 volumes:
   filestore:
   db:
+#networks:
+#  default:
+#    driver_opts:
+#      encrypted: 1
+
+#  public:
+#    external: true
