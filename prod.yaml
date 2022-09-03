@@ -48,7 +48,7 @@ services:
 networks:
   default:
     driver_opts:
-      encrypted: 1
+      encrypted: 0
 
   public:
     external: true
