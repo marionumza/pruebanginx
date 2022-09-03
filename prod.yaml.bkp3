@@ -1,0 +1,62 @@
+#version: "2.4"
+
+#services:
+
+#    environment:
+
+version: "2.4"
+services:
+  odoo_proxy:
+    image: ghcr.io/tecnativa/docker-whitelist:latest
+    depends_on:
+      - odoo
+    networks:
+      default:
+  odoo:
+    extends:
+      file: common.yaml
+      service: odoo
+    restart: unless-stopped
+    env_file:
+      - .docker/odoo.env
+      - .docker/db-access.env
+    environment:
+      DB_FILTER: "^prod"
+      DOODBA_ENVIRONMENT: "${DOODBA_ENVIRONMENT-prod}"
+      INITIAL_LANG: "es_AR"
+      PORT: "6899 8069"
+      TARGET: odoo
+    depends_on:
+      - db
+    networks: &public
+      default:
+      public:
+    ports:
+      - "0.0.0.0:6899:6899"
+      - "0.0.0.0:8069:8069"
+    labels:
+      doodba.domain.main: ""
+
+  db:
+    extends:
+      file: common.yaml
+      service: db
+    env_file:
+      - .docker/db-creation.env
+    restart: unless-stopped
+
+networks:
+  default:
+    internal: ${DOODBA_NETWORK_INTERNAL-true}
+  public:
+
+volumes:
+  filestore:
+  db:
+#networks:
+#  default:
+#    driver_opts:
+#      encrypted: 1
+
+#  public:
+#    external: true

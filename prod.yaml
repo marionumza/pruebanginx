@@ -1,49 +1,63 @@
-#version: "2.4"
-
-#services:
-
-#    environment:
-
 version: "2.4"
+
 services:
   odoo_proxy:
     image: ghcr.io/tecnativa/docker-whitelist:latest
     depends_on:
       - odoo
-    networks:
-      default:
-  odoo:
-    extends:
-      file: common.yaml
-      service: odoo
-    restart: unless-stopped
-    env_file:
-      - .docker/odoo.env
-      - .docker/db-access.env
-    environment:
-      DB_FILTER: "^prod"
-      DOODBA_ENVIRONMENT: "${DOODBA_ENVIRONMENT-prod}"
-      INITIAL_LANG: "es_AR"
-      PORT: "6899 8069"
-      TARGET: odoo
-    depends_on:
-      - db
     networks: &public
       default:
       public:
     ports:
       - "0.0.0.0:6899:6899"
       - "0.0.0.0:8069:8069"
-    labels:
-      doodba.domain.main: ""
+    environment:
+      PORT: "6899 8069"
+      TARGET: odoo
+
+  odoo:
+    extends:
+      file: common.yaml
+      service: odoo
+    build:
+      args:
+        # To aggregate in development, use `setup-devel.yaml`
+        AGGREGATE: "false"
+        # Export these variables to own files created by odoo in your filesystem
+        UID: "${UID:-1000}"
+        GID: "${GID:-1000}"
+        # No need for this in development
+        PIP_INSTALL_ODOO: "false"
+        CLEAN: "false"
+        COMPILE: "false"
+    environment:
+      DOODBA_ENVIRONMENT: "${DOODBA_ENVIRONMENT-prod}"
+      LIST_DB: "false"
+      DEBUGPY_ENABLE: "${DOODBA_DEBUGPY_ENABLE:-0}"
+      PGDATABASE: &dbname prod
+      PYTHONDONTWRITEBYTECODE: 1
+      PYTHONOPTIMIZE: ""
+      PYTHONPATH: /opt/odoo/custom/src/odoo
+      # To avoid installing demo data export DOODBA_WITHOUT_DEMO=all
+      WITHOUT_DEMO: "${DOODBA_WITHOUT_DEMO-false}"
+    volumes:
+      - ./odoo/custom:/opt/odoo/custom:ro,z
+      - ./odoo/auto:/opt/odoo/auto:rw,z
+    command:
+      - odoo
+      - --limit-memory-soft=0
+      - --limit-time-real-cron=9999999
+      - --limit-time-real=9999999
+      - --workers=0
+      - --dev=reload,qweb,werkzeug,xml
 
   db:
     extends:
       file: common.yaml
       service: db
-    env_file:
-      - .docker/db-creation.env
-    restart: unless-stopped
+    environment:
+      POSTGRES_DB: *dbname
+      POSTGRES_PASSWORD: odoopassword
 
 networks:
   default:
@@ -53,10 +67,3 @@ networks:
 volumes:
   filestore:
   db:
-#networks:
-#  default:
-#    driver_opts:
-#      encrypted: 1
-
-#  public:
-#    external: true
