@@ -1,20 +1,6 @@
 version: "2.4"
 
 services:
-  odoo_proxy:
-    image: ghcr.io/tecnativa/docker-whitelist:latest
-    depends_on:
-      - odoo
-    networks: &public
-      default:
-      public:
-    ports:
-      - "0.0.0.0:6899:6899"
-      - "0.0.0.0:8069:8069"
-    environment:
-      PORT: "6899 8069"
-      TARGET: odoo
-
   odoo:
     extends:
       file: common.yaml
@@ -23,50 +9,60 @@ services:
     env_file:
       - .docker/odoo.env
       - .docker/db-access.env
-    build:
-      args:
-        # To aggregate in development, use `setup-devel.yaml`
-        AGGREGATE: "false"
-        # Export these variables to own files created by odoo in your filesystem
-        UID: "${UID:-1000}"
-        GID: "${GID:-1000}"
-        # No need for this in development
-        PIP_INSTALL_ODOO: "false"
-        CLEAN: "false"
-        COMPILE: "false"
     environment:
+      DB_FILTER: "^prod"
       DOODBA_ENVIRONMENT: "${DOODBA_ENVIRONMENT-prod}"
-      LIST_DB: "false"
-      DEBUGPY_ENABLE: "${DOODBA_DEBUGPY_ENABLE:-0}"
-      PGDATABASE: &dbname prod
-      PYTHONDONTWRITEBYTECODE: 1
-      PYTHONOPTIMIZE: ""
-      PYTHONPATH: /opt/odoo/custom/src/odoo
-      # To avoid installing demo data export DOODBA_WITHOUT_DEMO=all
-      WITHOUT_DEMO: "${DOODBA_WITHOUT_DEMO-false}"
-    volumes:
-      - ./odoo/custom:/opt/odoo/custom:ro,z
-      - ./odoo/auto:/opt/odoo/auto:rw,z
-    command:
-      - odoo
-      - --limit-memory-soft=0
-      - --limit-time-real-cron=9999999
-      - --limit-time-real=9999999
-      - --workers=0
-      - --dev=reload,qweb,werkzeug,xml
+      INITIAL_LANG: "es_AR"
+    depends_on:
+      - db
+    networks:
+      default:
+    labels:
+      doodba.domain.main: ""
 
   db:
     extends:
       file: common.yaml
       service: db
-    environment:
-      POSTGRES_DB: *dbname
-      POSTGRES_PASSWORD: odoo
+    env_file:
+      - .docker/db-creation.env
+    restart: unless-stopped
+    networks:
+      default:
+      inverseproxy_shared:
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: "inverseproxy_shared"
+      traefik.tcp.services.pruebanginx-15-0-prod-database.loadbalancer.server.port: 5432
+      traefik.pruebanginx-15-0-prod-database-0.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-0.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-0.service: pruebanginx-15-0-prod-database
+      traefik.pruebanginx-15-0-prod-database-1.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-1.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-1.service: pruebanginx-15-0-prod-database
+      traefik.pruebanginx-15-0-prod-database-2.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-2.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-2.service: pruebanginx-15-0-prod-database
+      traefik.pruebanginx-15-0-prod-database-3.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-3.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-3.service: pruebanginx-15-0-prod-database
+      traefik.pruebanginx-15-0-prod-database-4.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-4.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-4.service: pruebanginx-15-0-prod-database
+      traefik.pruebanginx-15-0-prod-database-5.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-5.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-5.service: pruebanginx-15-0-prod-database
+      traefik.pruebanginx-15-0-prod-database-6.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-6.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-6.service: pruebanginx-15-0-prod-database
+      traefik.pruebanginx-15-0-prod-database-7.port: 5432
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-7.rule: Host()
+      traefik.tcp.routers.pruebanginx-15-0-prod-database-7.service: pruebanginx-15-0-prod-database
 
 networks:
   default:
-    internal: ${DOODBA_NETWORK_INTERNAL-true}
-  public:
+    driver_opts:
+      encrypted: 1
 
 volumes:
   filestore:
