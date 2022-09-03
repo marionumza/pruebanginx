@@ -50,7 +50,7 @@ networks:
     driver_opts:
       encrypted: 1
 
-  inverseproxy_shared:
+  public:
     external: true
 
 volumes:
